@@ -16,10 +16,12 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 set(target_dependencies
   rclcpp
-  std_msgs)
+  std_msgs
+  geometry_msgs)
 
 add_executable(status_pac src/status_pac.cpp)
 target_include_directories(status_pac PUBLIC
@@ -28,7 +30,17 @@ target_include_directories(status_pac PUBLIC
 ament_target_dependencies(status_pac ${target_dependencies})
 target_compile_features(status_pac PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
+add_executable(mission_origin_gps src/mission_origin_gps.cpp)
+target_include_directories(mission_origin_gps PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(mission_origin_gps ${target_dependencies})
+target_compile_features(mission_origin_gps PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
 install(TARGETS status_pac
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS mission_origin_gps
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

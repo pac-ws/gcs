@@ -16,7 +16,7 @@ class StatusPAC : public rclcpp::Node {
         status_(2)  // Default status is '2' (stop)
   {
     // Create a publisher on the 'status_pac' topic
-    publisher_ = this->create_publisher<std_msgs::msg::Int32>("status_pac", 10);
+    publisher_ = this->create_publisher<std_msgs::msg::Int32>("/pac_gcs/status_pac", 10);
 
     // Start a separate thread for user input
     input_thread_ = std::thread(&StatusPAC::inputLoop, this);
