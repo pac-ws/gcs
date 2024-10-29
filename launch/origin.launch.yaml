@@ -1,0 +1,25 @@
+launch:
+  - arg:
+      name: "origin_lat"
+      default: "39.94901115531301"
+  - arg:
+      name: "origin_lon"
+      default: "-75.18825979871113"
+  - arg:
+      name: "origin_heading"
+      default: "2.4"
+
+  - node:
+      pkg: "gcs"
+      exec: "mission_origin_gps"
+      name: "mission_origin_gps"
+      param:
+        -
+          name: "mission_origin_lon"
+          value: "$(var origin_lon)"
+        -
+          name: "mission_origin_lat"
+          value: "$(var origin_lat)"
+        -
+          name: "heading"
+          value: "$(var origin_heading)"
