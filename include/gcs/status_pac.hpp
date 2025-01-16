@@ -35,12 +35,16 @@ class StatusPAC : public rclcpp::Node {
  private:
   void inputLoop() {
     while (rclcpp::ok()) {
-      std::cout << "Enter status (0: ready, 1: pause, 2: stop) and press Enter"
+      std::cout << "Enter status (0: ready, 1: pause, 2: stop, 3: takeoff, 4: land): "
                 << std::endl;
       std::cout << "0: ready | lpac publishes velocity commands" << std::endl;
       std::cout << "1: pause | lpac publishes zero velocity commands"
                 << std::endl;
-      std::cout << "2: stop  | lpac stops publishing and tries to shutdown node"
+      std::cout << "2: stop  | lpac stops publishing"
+                << std::endl;
+      std::cout << "3: takeoff | takeoff robots"
+                << std::endl;
+      std::cout << "4: land | land robots"
                 << std::endl;
       int current_status = 2;
       {
@@ -53,15 +57,20 @@ class StatusPAC : public rclcpp::Node {
         std::cout << "\033[34mCurrent status: 1 pause\033[0m" << std::endl;
       } else if (current_status == 2) {
         std::cout << "\033[31mCurrent status: 2 stop\033[0m" << std::endl;
+      } else if (current_status == 3) {
+        std::cout << "\033[31mCurrent status: 3 takeoff\033[0m" << std::endl;
+      } else if (current_status == 4) {
+        std::cout << "\033[31mCurrent status: 4 land\033[0m" << std::endl;
       }
+
       int input_status;
       std::cin >> input_status;
 
-      if (input_status == 0 || input_status == 1 || input_status == 2) {
+      if (input_status == 0 || input_status == 1 || input_status == 2 || input_status == 3 || input_status == 4) {
         std::lock_guard<std::mutex> lock(status_mutex_);
         status_ = input_status;
       } else {
-        std::cout << "Invalid input. Please enter 0, 1, or 2." << std::endl;
+        std::cout << "Invalid input. Please enter 0, 1, 2, 3, or 4." << std::endl;
       }
     }
   }
