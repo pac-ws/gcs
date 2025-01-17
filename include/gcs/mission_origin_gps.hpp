@@ -28,7 +28,7 @@ public:
 
     // Create publishers
     publisher_gps_ = this->create_publisher<geometry_msgs::msg::Point>(
-        "/pac_gcs/mission_origin_gps", qos);
+        "mission_origin_gps", qos);
 
     // Create a timer to publish messages periodically
     timer_ = this->create_wall_timer(

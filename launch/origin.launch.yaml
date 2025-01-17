@@ -13,13 +13,11 @@ launch:
       pkg: "gcs"
       exec: "mission_origin_gps"
       name: "mission_origin_gps"
+      namespace: "pac_gcs"
       param:
-        -
-          name: "mission_origin_lon"
+        - name: "mission_origin_lon"
           value: "$(var origin_lon)"
-        -
-          name: "mission_origin_lat"
+        - name: "mission_origin_lat"
           value: "$(var origin_lat)"
-        -
-          name: "heading"
+        - name: "heading"
           value: "$(var origin_heading)"
