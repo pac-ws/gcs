@@ -10,12 +10,14 @@ class MissionControl : public rclcpp::Node {
   bool enable_ = false;
   bool takeoff_ = false;
   bool land_ = false;
+  bool geofence_ = true;
   rclcpp::SyncParametersClient::SharedPtr sync_parameters_client_;
   std::shared_ptr<rclcpp::ParameterEventHandler> mission_control_PEH_ptr_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_hardware_enable_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_enable_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_takeoff_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_land_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_geofence_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr publisher_;
 
@@ -32,6 +34,9 @@ class MissionControl : public rclcpp::Node {
 
     this->declare_parameter<bool>("land", false);
     this->get_parameter("land", land_);
+
+    this->declare_parameter<bool>("geofence", true);
+    this->get_parameter("geofence", geofence_);
 
     sync_parameters_client_ = std::make_shared<rclcpp::SyncParametersClient>(this);
     while (!sync_parameters_client_->wait_for_service(1s)) {
@@ -59,10 +64,14 @@ class MissionControl : public rclcpp::Node {
         "land", [this](const rclcpp::Parameter &p) {
           land_ = p.get_value<bool>();
         });
+    handle_geofence_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "geofence", [this](const rclcpp::Parameter &p) {
+          geofence_ = p.get_value<bool>();
+        });
     publisher_ = this->create_publisher<std_msgs::msg::Int32MultiArray>("mission_control", 10);
     timer_ = this->create_wall_timer(500ms, [this]() {
       std_msgs::msg::Int32MultiArray msg;
-      msg.data = {hardware_enable_, enable_, takeoff_, land_};
+      msg.data = {hardware_enable_, enable_, takeoff_, land_, geofence_};
       publisher_->publish(msg);
     });
   }
