@@ -10,7 +10,7 @@ class MissionControl : public rclcpp::Node {
   bool enable_ = false;
   bool takeoff_ = false;
   bool land_ = false;
-  bool geofence_ = true;
+  bool geofence_ = false;
   rclcpp::SyncParametersClient::SharedPtr sync_parameters_client_;
   std::shared_ptr<rclcpp::ParameterEventHandler> mission_control_PEH_ptr_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_hardware_enable_;
@@ -35,7 +35,7 @@ class MissionControl : public rclcpp::Node {
     this->declare_parameter<bool>("land", false);
     this->get_parameter("land", land_);
 
-    this->declare_parameter<bool>("geofence", true);
+    this->declare_parameter<bool>("geofence", false);
     this->get_parameter("geofence", geofence_);
 
     sync_parameters_client_ = std::make_shared<rclcpp::SyncParametersClient>(this);
