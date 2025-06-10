@@ -41,6 +41,10 @@ add_executable(mission_control src/mission_control.cpp)
 ament_target_dependencies(mission_control ${target_dependencies})
 target_compile_features(mission_control PUBLIC c_std_99 cxx_std_17)
 
+add_executable(fake_robot src/fake_robot.cpp)
+ament_target_dependencies(fake_robot ${target_dependencies})
+target_compile_features(fake_robot PUBLIC c_std_99 cxx_std_17)
+
 install(TARGETS status_pac
   DESTINATION lib/${PROJECT_NAME})
 
@@ -48,6 +52,9 @@ install(TARGETS mission_origin_gps
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS mission_control
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS fake_robot
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
