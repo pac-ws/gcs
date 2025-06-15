@@ -62,6 +62,7 @@ class FakeRobot : public rclcpp::Node {
   double init_pos_x_;
   double init_pos_y_;
   double speed_limit_;
+  static constexpr double dt_ = 0.030;  // Time step in seconds (matches 30ms timer)
 
   // State variables
   geometry_msgs::msg::PoseStamped current_pos_;
@@ -82,12 +83,14 @@ class FakeRobot : public rclcpp::Node {
   void cmd_vel_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg) {
     double vel_x = msg->twist.linear.x;
     double vel_y = msg->twist.linear.y;
-    double vel = std::sqrt(vel_x * vel_x + vel_y * vel_y);
+    double vel_squared = vel_x * vel_x + vel_y * vel_y;
+    double speed_limit_squared = speed_limit_ * speed_limit_;
 
-    // Apply speed limit
-    if (vel > speed_limit_) {
-      vel_x = speed_limit_ * vel_x / vel;
-      vel_y = speed_limit_ * vel_y / vel;
+    // Apply speed limit using squared values to avoid expensive sqrt
+    if (vel_squared > speed_limit_squared) {
+      double scale_factor = speed_limit_ / std::sqrt(vel_squared);
+      vel_x *= scale_factor;
+      vel_y *= scale_factor;
     }
 
     current_vel_.twist.linear.x = vel_x;
@@ -95,9 +98,9 @@ class FakeRobot : public rclcpp::Node {
   }
 
   void timer_callback() {
-    // Update position based on velocity (30ms time step)
-    current_pos_.pose.position.x += current_vel_.twist.linear.x * 0.03;
-    current_pos_.pose.position.y += current_vel_.twist.linear.y * 0.03;
+    // Update position based on velocity using consistent time step
+    current_pos_.pose.position.x += current_vel_.twist.linear.x * dt_;
+    current_pos_.pose.position.y += current_vel_.twist.linear.y * dt_;
 
     // Update timestamp
     current_pos_.header.stamp = this->get_clock()->now();

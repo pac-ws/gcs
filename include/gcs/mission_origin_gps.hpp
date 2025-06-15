@@ -3,9 +3,7 @@
 #include <geometry_msgs/msg/point.hpp>
 #include <iostream>
 #include <memory>
-#include <mutex>
 #include <rclcpp/rclcpp.hpp>
-#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -30,15 +28,16 @@ public:
     publisher_gps_ = this->create_publisher<geometry_msgs::msg::Point>(
         "mission_origin_gps", qos);
 
-    // Create a timer to publish messages periodically
+    // Pre-create the GPS message since data is static
+    gps_message_.x = lon_origin;
+    gps_message_.y = lat_origin;
+    gps_message_.z = heading;
+
+    // Create a timer to publish messages periodically (reduced frequency for static data)
     timer_ = this->create_wall_timer(
-        500ms, [this]() -> void {
-          // Publish GPS data
-          auto message_gps = geometry_msgs::msg::Point();
-          message_gps.x = lon_origin;
-          message_gps.y = lat_origin;
-          message_gps.z = heading;
-          publisher_gps_->publish(message_gps);
+        2000ms, [this]() -> void {
+          // Publish static GPS data (every 5 seconds is sufficient)
+          publisher_gps_->publish(gps_message_);
         });
   }
 
@@ -46,8 +45,11 @@ private:
   // Member variables
   double lon_origin;
   double lat_origin;
-  float heading;
+  double heading;  // Fixed type inconsistency - should be double like others
 
+  // Pre-created message to avoid repeated allocation
+  geometry_msgs::msg::Point gps_message_;
+  
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr publisher_gps_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
