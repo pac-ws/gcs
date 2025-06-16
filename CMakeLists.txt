@@ -19,12 +19,17 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(async_pac_gnn_interfaces REQUIRED)
+find_package(Curses REQUIRED)
 
 set(target_dependencies
   rclcpp
   rclcpp_components
   std_msgs
-  geometry_msgs)
+  geometry_msgs
+  async_pac_gnn_interfaces
+  Curses)
+
 
 # Executables
 add_executable(status_pac src/status_pac.cpp)
@@ -48,6 +53,15 @@ target_include_directories(fake_robot PUBLIC
 ament_target_dependencies(fake_robot ${target_dependencies})
 target_compile_features(fake_robot PUBLIC c_std_99 cxx_std_17)
 
+add_executable(swarm_control src/swarm_control.cpp)
+include_directories(${CURSES_INCLUDE_DIR})
+target_include_directories(swarm_control PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(swarm_control ${target_dependencies})
+target_link_libraries(swarm_control ${CURSES_LIBRARIES})
+target_compile_features(swarm_control PUBLIC c_std_99 cxx_std_17)
+
 # Composable nodes library
 add_library(mission_component SHARED src/mission_components.cpp)
 target_compile_definitions(mission_component PRIVATE "COMPOSITION_BUILDING_DLL")
@@ -64,7 +78,7 @@ rclcpp_components_register_nodes(mission_component
 )
 
 # Install targets
-install(TARGETS status_pac mission fake_robot
+install(TARGETS status_pac mission fake_robot swarm_control
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS mission_component
