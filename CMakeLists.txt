@@ -5,71 +5,81 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-if (NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE Release)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if (NOT CMAKE_CXX_STANDARD)
-	set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
+# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(target_dependencies
   rclcpp
+  rclcpp_components
   std_msgs
   geometry_msgs)
 
+# Executables
 add_executable(status_pac src/status_pac.cpp)
 target_include_directories(status_pac PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(status_pac ${target_dependencies})
-target_compile_features(status_pac PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(status_pac PUBLIC c_std_99 cxx_std_17)
 
-add_executable(mission_origin_gps src/mission_origin_gps.cpp)
-target_include_directories(mission_origin_gps PUBLIC
+add_executable(mission src/mission_control.cpp)
+target_include_directories(mission PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(mission_origin_gps ${target_dependencies})
-target_compile_features(mission_origin_gps PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-
-add_executable(mission_control src/mission_control.cpp)
-ament_target_dependencies(mission_control ${target_dependencies})
-target_compile_features(mission_control PUBLIC c_std_99 cxx_std_17)
+ament_target_dependencies(mission ${target_dependencies})
+target_compile_features(mission PUBLIC c_std_99 cxx_std_17)
 
 add_executable(fake_robot src/fake_robot.cpp)
+target_include_directories(fake_robot PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(fake_robot ${target_dependencies})
 target_compile_features(fake_robot PUBLIC c_std_99 cxx_std_17)
 
-install(TARGETS status_pac
-  DESTINATION lib/${PROJECT_NAME})
+# Composable nodes library
+add_library(mission_component SHARED src/mission_components.cpp)
+target_compile_definitions(mission_component PRIVATE "COMPOSITION_BUILDING_DLL")
+target_include_directories(mission_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(mission_component ${target_dependencies})
+target_compile_features(mission_component PUBLIC c_std_99 cxx_std_17)
 
-install(TARGETS mission_origin_gps
-  DESTINATION lib/${PROJECT_NAME})
-
-install(TARGETS mission_control
-  DESTINATION lib/${PROJECT_NAME})
-
-install(TARGETS fake_robot
-  DESTINATION lib/${PROJECT_NAME})
-
-install(DIRECTORY
-    launch
-    DESTINATION share/${PROJECT_NAME}/
+# Register the composable nodes
+rclcpp_components_register_nodes(mission_component
+  "gcs::MissionOriginGPS"
+  "gcs::MissionControl"
 )
 
+# Install targets
+install(TARGETS status_pac mission fake_robot
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS mission_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/)
+
+# Testing
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
+  # Skip copyright and cpplint checks
   set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()

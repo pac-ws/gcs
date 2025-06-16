@@ -15,11 +15,13 @@ class FakeRobot : public rclcpp::Node {
     this->declare_parameter("pos_x", 0.0);
     this->declare_parameter("pos_y", 0.0);
     this->declare_parameter("speed_limit", 1.0);
+    this->declare_parameter("velocity_timeout", 1.0);  // seconds
 
     // Get parameter values
     init_pos_x_ = this->get_parameter("pos_x").as_double();
     init_pos_y_ = this->get_parameter("pos_y").as_double();
     speed_limit_ = this->get_parameter("speed_limit").as_double();
+    velocity_timeout_ = this->get_parameter("velocity_timeout").as_double();
 
     // Initialize current position
     current_pos_.pose.position.x = init_pos_x_;
@@ -37,6 +39,9 @@ class FakeRobot : public rclcpp::Node {
     current_vel_.twist.angular.x = 0.0;
     current_vel_.twist.angular.y = 0.0;
     current_vel_.twist.angular.z = 0.0;
+    
+    // Initialize last velocity time (start with current time so robot doesn't move initially)
+    last_velocity_time_ = this->get_clock()->now();
 
     // Create subscription
     subscription_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
@@ -55,6 +60,7 @@ class FakeRobot : public rclcpp::Node {
     RCLCPP_INFO(this->get_logger(), "Initial position: x=%.2f, y=%.2f",
                 init_pos_x_, init_pos_y_);
     RCLCPP_INFO(this->get_logger(), "Speed limit: %.2f", speed_limit_);
+    RCLCPP_INFO(this->get_logger(), "Velocity timeout: %.2f seconds", velocity_timeout_);
   }
 
  private:
@@ -62,11 +68,13 @@ class FakeRobot : public rclcpp::Node {
   double init_pos_x_;
   double init_pos_y_;
   double speed_limit_;
+  double velocity_timeout_;
   static constexpr double dt_ = 0.030;  // Time step in seconds (matches 30ms timer)
 
   // State variables
   geometry_msgs::msg::PoseStamped current_pos_;
   geometry_msgs::msg::TwistStamped current_vel_;
+  rclcpp::Time last_velocity_time_;
 
   // ROS2 components
   rmw_qos_profile_t qos_profile_sensor_data_ = rmw_qos_profile_sensor_data;
@@ -95,15 +103,25 @@ class FakeRobot : public rclcpp::Node {
 
     current_vel_.twist.linear.x = vel_x;
     current_vel_.twist.linear.y = vel_y;
+    
+    // Update timestamp of last received velocity command
+    last_velocity_time_ = this->get_clock()->now();
   }
 
   void timer_callback() {
-    // Update position based on velocity using consistent time step
-    current_pos_.pose.position.x += current_vel_.twist.linear.x * dt_;
-    current_pos_.pose.position.y += current_vel_.twist.linear.y * dt_;
+    // Check if velocity command is still valid (not too old)
+    rclcpp::Time current_time = this->get_clock()->now();
+    rclcpp::Duration time_since_last_vel = current_time - last_velocity_time_;
+    
+    if (time_since_last_vel.seconds() < velocity_timeout_) {
+      // Update position based on velocity using consistent time step
+      current_pos_.pose.position.x += current_vel_.twist.linear.x * dt_;
+      current_pos_.pose.position.y += current_vel_.twist.linear.y * dt_;
+    }
+    // If velocity is too old, don't update position (robot stops)
 
     // Update timestamp
-    current_pos_.header.stamp = this->get_clock()->now();
+    current_pos_.header.stamp = current_time;
 
     // Publish pose
     publisher_pose_->publish(current_pos_);
