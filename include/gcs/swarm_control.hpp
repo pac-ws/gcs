@@ -5,6 +5,7 @@
 #include "rcutils/logging.h"
 #include <std_msgs/msg/int32_multi_array.hpp>
 #include <async_pac_gnn_interfaces/msg/robot_status.hpp>
+#include <gcs/table_column.hpp>
 
 using namespace std::chrono_literals;
 
@@ -12,39 +13,10 @@ class SwarmControl : public rclcpp::Node{
     public:
         SwarmControl();
     private:
-        const int COL_SINGLE_WIDTH = 10;
-        const int COL_DOUBLE_WIDTH = COL_SINGLE_WIDTH * 2;
-        const int COL_QUAD_WIDTH = COL_SINGLE_WIDTH * 3;
-
-        rclcpp::QoS qos_;
-        rclcpp::TimerBase::SharedPtr timer_;
-        std::unordered_map<std::string, rclcpp::Subscription<async_pac_gnn_interfaces::msg::RobotStatus>::SharedPtr> robot_status_subs_;
-
         struct TermPoint2D {
             int x;
             int y;
         };
-
-        struct ITableColumn {
-            virtual ~ITableColumn() = default;
-        };
-        
-        template<typename T>
-        struct TableColumn : public ITableColumn {
-            std::string header;
-            int width;
-            std::vector<T> data = {};
-        };
-
-        TableColumn<std::string> id_col_;
-        TableColumn<std::string> status_col_;
-        TableColumn<int> batt_col_;
-        TableColumn<float> lat_col_;
-        TableColumn<float> lon_col_;
-        TableColumn<int> sats_col_;
-
-        std::vector<ITableColumn> columns_;
-
         struct Status {
             std::string id;
             uint8_t ready;
@@ -67,12 +39,36 @@ class SwarmControl : public rclcpp::Node{
             float ned_vel_y;
             float ned_vel_z;
         };
-        std::unordered_map<std::string, Status> robot_status_;
 
+        // ROS
+        std::unordered_map<std::string, Status> robot_status_;
+        std::unordered_map<std::string, rclcpp::Subscription<async_pac_gnn_interfaces::msg::RobotStatus>::SharedPtr> robot_status_subs_;
+        rclcpp::QoS qos_;
+        rclcpp::TimerBase::SharedPtr timer_;
+
+        // UI Elements
+        WINDOW* status_table_;
+        const int STATUS_TABLE_HEIGHT = 30;
+        const int STATUS_TABLE_WIDTH = 120;
+        const int STATUS_TABLE_X = 0;
+        const int STATUS_TABLE_Y = 0;
+
+        const int DATA_ROW_START = 3; // Start of table content. Header is at row 1
+        const int COL_SINGLE_WIDTH = 10;
+        const int COL_DOUBLE_WIDTH = COL_SINGLE_WIDTH * 2;
+        const int COL_QUAD_WIDTH = COL_SINGLE_WIDTH * 3;
+
+        std::shared_ptr<TableColumn<std::string>> id_col_;
+        std::shared_ptr<TableColumn<std::string>> state_col_;
+        std::shared_ptr<TableColumn<int>> batt_col_;
+        std::shared_ptr<TableColumn<float>> lat_col_;
+        std::shared_ptr<TableColumn<float>> lon_col_;
+        std::shared_ptr<TableColumn<int>> sats_col_;
+        std::vector<std::shared_ptr<TableColumnBase>> columns_;
+
+        // Methods
+        void InitializeUI();
         void GetRobotSubs();
-        void GetRobotStatus();
-        void StatusTable(TermPoint2D, int, int);
-        template<typename T>
-        void DrawColumn(WINDOW*, TableColumn<T>, int);
+        void StatusTable();
         void Update();
 };
