@@ -7,7 +7,6 @@
 #include <async_pac_gnn_interfaces/msg/robot_status.hpp>
 
 using namespace std::chrono_literals;
-template<typename T>
 
 class SwarmControl : public rclcpp::Node{
     public:
@@ -25,24 +24,29 @@ class SwarmControl : public rclcpp::Node{
             int x;
             int y;
         };
+
+        struct ITableColumn {
+            virtual ~ITableColumn() = default;
+        };
         
-        struct TableColumn {
+        template<typename T>
+        struct TableColumn : public ITableColumn {
             std::string header;
             int width;
             std::vector<T> data = {};
         };
 
-        TableColumn id_col_;
-        TableColumn status_col_;
-        TableColumn batt_col_;
-        TableColumn lat_col_;
-        TableColumn lon_col_;
-        TableColumn sats_col_;
-        TableColumn pose_col_;
+        TableColumn<std::string> id_col_;
+        TableColumn<std::string> status_col_;
+        TableColumn<int> batt_col_;
+        TableColumn<float> lat_col_;
+        TableColumn<float> lon_col_;
+        TableColumn<int> sats_col_;
 
-        std::vector<TableColumn> columns_;
+        std::vector<ITableColumn> columns_;
 
         struct Status {
+            std::string id;
             uint8_t ready;
             uint8_t batt;
             std::string state;
@@ -68,6 +72,7 @@ class SwarmControl : public rclcpp::Node{
         void GetRobotSubs();
         void GetRobotStatus();
         void StatusTable(TermPoint2D, int, int);
-        void DrawColumn(WINDOW, TableColumn, int);
+        template<typename T>
+        void DrawColumn(WINDOW*, TableColumn<T>, int);
         void Update();
 };

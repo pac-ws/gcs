@@ -22,7 +22,7 @@ SwarmControl::SwarmControl() : Node("swarm_control"), qos_(1) {
     sats_col_ = {"SATS", COL_SINGLE_WIDTH};
     //pose_col_ = {"POSE", COL_QUAD_WIDTH};
 
-    columns_ = {id_col_, status_col_, batt_col_, lat_col_, lon_col_, sats_col_}
+    columns_ = {id_col_, status_col_, batt_col_, lat_col_, lon_col_, sats_col_};
 }
 void SwarmControl::GetRobotSubs() {
     auto topic_map = this->get_topic_names_and_types();
@@ -39,10 +39,12 @@ void SwarmControl::GetRobotSubs() {
 
         if (topic_name.find("/status") != std::string::npos &&
                 std::find(types.begin(), types.end(), "async_pac_gnn_interfaces/msg/RobotStatus") != types.end()) {
-            std::string robot_name = topic_name.substr(1, topic_name.find("/status") - 1); std::string topic = "/" + robot_name + "/status";
+            std::string robot_name = topic_name.substr(1, topic_name.find("/status") - 1); 
+            std::string topic = "/" + robot_name + "/status";
             rclcpp::Subscription<async_pac_gnn_interfaces::msg::RobotStatus>::SharedPtr sub 
                 = this->create_subscription<async_pac_gnn_interfaces::msg::RobotStatus>( topic, qos_,
                         [this, topic_name](const async_pac_gnn_interfaces::msg::RobotStatus::SharedPtr msg){
+                            robot_status_[topic_name].id = robot_name;
                             robot_status_[topic_name].ready = msg->ready;
                             robot_status_[topic_name].batt = msg->batt;
                             robot_status_[topic_name].state = msg->state;
@@ -90,27 +92,27 @@ void SwarmControl::StatusTable(TermPoint2D top_left, int row_height, int col_wid
 
     size_t cnt = 0;
     for (auto i = robot_status_.begin(); i != robot_status_.end(); i++, cnt++) {
-        auto ready = i->second.ready;
-        auto batt = i->second.batt;
-        auto state = i->second.state;
-        auto breach = i->second.breach;
-        auto gps_lat = i->second.gps_lat;
-        auto gps_lon = i->second.gps_lon;
-        auto gps_alt = i->second.gps_alt;
-        auto gps_sats = i->second.gps_sats;
-        auto gps_heading = i->second.gps_heading;
-        auto local_pos_x = i->second.local_pos_x;
-        auto local_pos_y = i->second.local_pos_y;
-        auto local_pos_z = i->second.local_pos_z;
-        auto local_pos_heading = i->second.local_pos_heading;
-        auto pose_x = i->second.pose_x;
-        auto pose_y = i->second.pose_y;
-        auto pose_z = i->second.pose_z;
-        auto ned_vel_x = i->second.ned_vel_x;
-        auto ned_vel_y = i->second.ned_vel_y;
-        auto ned_vel_z = i->second.ned_vel_z;
+       // auto ready = i->second.ready;
+       // auto batt = i->second.batt;
+       // auto state = i->second.state;
+       // auto breach = i->second.breach;
+       // auto gps_lat = i->second.gps_lat;
+       // auto gps_lon = i->second.gps_lon;
+       // auto gps_alt = i->second.gps_alt;
+       // auto gps_sats = i->second.gps_sats;
+       // auto gps_heading = i->second.gps_heading;
+       // auto local_pos_x = i->second.local_pos_x;
+       // auto local_pos_y = i->second.local_pos_y;
+       // auto local_pos_z = i->second.local_pos_z;
+       // auto local_pos_heading = i->second.local_pos_heading;
+       // auto pose_x = i->second.pose_x;
+       // auto pose_y = i->second.pose_y;
+       // auto pose_z = i->second.pose_z;
+       // auto ned_vel_x = i->second.ned_vel_x;
+       // auto ned_vel_y = i->second.ned_vel_y;
+       // auto ned_vel_z = i->second.ned_vel_z;
 
-        columns_[0].data.push_back(cnt);
+        columns_[0].data.push_back(robot_name);
         columns_[1].data.push_back(i->second.state);
         columns_[2].data.push_back(i->second.batt);
         columns_[3].data.push_back(i->second.lat);
@@ -118,28 +120,25 @@ void SwarmControl::StatusTable(TermPoint2D top_left, int row_height, int col_wid
         columns_[5].data.push_back(i->second.sats);
     }
     
-    int start = 2;
+    int col_start = 2;
     for (auto i = columns_.begin(); i != columns_.end(); i++) {
-        DrawColumn(*i, start);
-        start += i->width;
+        DrawColumn(table, *i, col_start);
+        col_start += i->width;
     }
     wrefresh(table);
 }
 
-void SwarmControl::DrawColumn(WINDOW table, TableColumn col, int start){
+void SwarmControl::DrawColumn(WINDOW* table, TableColumn<T> col, int col_start){
     auto data = col.data;
-    mvwprintw(table, 1, start, col.header);
+    mvwprintw(table, 1, col_start, col.header);
     size_t row = 3;
     for (auto i = data.begin(); i != data.end(); i++, row++) {
-        mvwprintw(table, row, start, i);
+        mvwprintw(table, row, col_start, i);
     }
 }
 
 void SwarmControl::Update() {
     GetRobotSubs();
-    //GetRobotStatus();
-
-    //clear();
     TermPoint2D table_top_left = {.x = 0, .y = 0};
     StatusTable(table_top_left, 1, 50);
     refresh();
