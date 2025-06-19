@@ -3,38 +3,44 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/component_manager.hpp>
-#include <std_msgs/msg/int32_multi_array.hpp>
+#include <async_pac_gnn_interfaces/msg/mission_control.hpp>
 
 namespace gcs {
 
 using namespace std::chrono_literals;
 class MissionControl : public rclcpp::Node {
  private:
-  bool hardware_enable_ = false;
-  bool enable_ = false;
+  bool hw_enable_ = false;
+  bool offboard_enable_ = false;
   bool takeoff_ = false;
   bool land_ = false;
   bool geofence_ = false;
+  bool pac_offboard_only_ = false;
+  bool pac_lpac_l1_ = false;
+  bool pac_lpac_l2_ = false;
   rclcpp::SyncParametersClient::SharedPtr sync_parameters_client_;
   std::shared_ptr<rclcpp::ParameterEventHandler> mission_control_PEH_ptr_;
-  rclcpp::ParameterCallbackHandle::SharedPtr handle_hardware_enable_;
-  rclcpp::ParameterCallbackHandle::SharedPtr handle_enable_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_hw_enable_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_offboard_enable_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_takeoff_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_land_;
   rclcpp::ParameterCallbackHandle::SharedPtr handle_geofence_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_offboard_only_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_lpac_l1_;
+  rclcpp::ParameterCallbackHandle::SharedPtr handle_lpac_l2_;
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr publisher_;
+  rclcpp::Publisher<async_pac_gnn_interfaces::msg::MissionControl>::SharedPtr publisher_;
 
  public:
   explicit MissionControl(
       const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
       : Node("mission_control", options) {
 
-    this->declare_parameter<bool>("hardware_enable", false);
-    this->get_parameter("hardware_enable", hardware_enable_);
+    this->declare_parameter<bool>("hw_enable", false);
+    this->get_parameter("hw_enable", hw_enable_);
 
-    this->declare_parameter<bool>("enable", false);
-    this->get_parameter("enable", enable_);
+    this->declare_parameter<bool>("offboard_enable", false);
+    this->get_parameter("offboard_enable", offboard_enable_);
 
     this->declare_parameter<bool>("takeoff", false);
     this->get_parameter("takeoff", takeoff_);
@@ -44,6 +50,15 @@ class MissionControl : public rclcpp::Node {
 
     this->declare_parameter<bool>("geofence", false);
     this->get_parameter("geofence", geofence_);
+
+    this->declare_parameter<bool>("pac_offboard_only", false);
+    this->get_parameter("pac_offboard_only", pac_offboard_only_);
+
+    this->declare_parameter<bool>("pac_lpac_l1", false);
+    this->get_parameter("pac_lpac_l1", pac_lpac_l1_);
+
+    this->declare_parameter<bool>("pac_lpac_l2", false);
+    this->get_parameter("pac_lpac_l2", pac_lpac_l2_);
 
     sync_parameters_client_ =
         std::make_shared<rclcpp::SyncParametersClient>(this);
@@ -59,13 +74,13 @@ class MissionControl : public rclcpp::Node {
 
     mission_control_PEH_ptr_ =
         std::make_shared<rclcpp::ParameterEventHandler>(this);
-    handle_hardware_enable_ = mission_control_PEH_ptr_->add_parameter_callback(
-        "hardware_enable", [this](const rclcpp::Parameter &p) {
-          hardware_enable_ = p.get_value<bool>();
+    handle_hw_enable_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "hw_enable", [this](const rclcpp::Parameter &p) {
+          hw_enable_ = p.get_value<bool>();
         });
-    handle_enable_ = mission_control_PEH_ptr_->add_parameter_callback(
-        "enable",
-        [this](const rclcpp::Parameter &p) { enable_ = p.get_value<bool>(); });
+    handle_offboard_enable_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "offboard_enable",
+        [this](const rclcpp::Parameter &p) { offboard_enable_ = p.get_value<bool>(); });
     handle_takeoff_ = mission_control_PEH_ptr_->add_parameter_callback(
         "takeoff",
         [this](const rclcpp::Parameter &p) { takeoff_ = p.get_value<bool>(); });
@@ -76,11 +91,27 @@ class MissionControl : public rclcpp::Node {
         "geofence", [this](const rclcpp::Parameter &p) {
           geofence_ = p.get_value<bool>();
         });
-    publisher_ = this->create_publisher<std_msgs::msg::Int32MultiArray>(
+    handle_offboard_only_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "pac_offboard_only",
+        [this](const rclcpp::Parameter &p) { pac_offboard_only_ = p.get_value<bool>(); });
+    handle_lpac_l1_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "pac_lpac_l1",
+        [this](const rclcpp::Parameter &p) { pac_lpac_l1_ = p.get_value<bool>(); });
+    handle_lpac_l2_ = mission_control_PEH_ptr_->add_parameter_callback(
+        "pac_lpac_l2",
+        [this](const rclcpp::Parameter &p) { pac_lpac_l2_ = p.get_value<bool>(); });
+    publisher_ = this->create_publisher<async_pac_gnn_interfaces::msg::MissionControl>(
         "mission_control", 10);
     timer_ = this->create_wall_timer(500ms, [this]() {
-      std_msgs::msg::Int32MultiArray msg;
-      msg.data = {hardware_enable_, enable_, takeoff_, land_, geofence_};
+      async_pac_gnn_interfaces::msg::MissionControl msg;
+      msg.hw_enable = hw_enable_;
+      msg.offboard_enable = offboard_enable_;
+      msg.takeoff = takeoff_;
+      msg.land = land_;
+      msg.geofence = geofence_;
+      msg.pac_offboard_only = pac_offboard_only_;
+      msg.pac_lpac_l1 = pac_lpac_l1_;
+      msg.pac_lpac_l2 = pac_lpac_l2_;
       publisher_->publish(msg);
     });
   }

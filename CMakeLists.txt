@@ -19,12 +19,15 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(async_pac_gnn_interfaces REQUIRED)
 
 set(target_dependencies
   rclcpp
   rclcpp_components
   std_msgs
-  geometry_msgs)
+  geometry_msgs
+  async_pac_gnn_interfaces
+)
 
 # Executables
 add_executable(status_pac src/status_pac.cpp)
