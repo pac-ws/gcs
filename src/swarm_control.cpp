@@ -14,8 +14,6 @@ SwarmControl::SwarmControl() : Node("swarm_control"), qos_(1) {
     // Main Loop Timer
     timer_ = this->create_wall_timer(
     100ms, std::bind(&SwarmControl::Update, this));
-
-    TableColumn<std::string> test_col(status_table_, "Test", std::vector<std::string>(), 10, 0);
 }
 
 void SwarmControl::InitializeUI() {
@@ -23,10 +21,10 @@ void SwarmControl::InitializeUI() {
     box(status_table_, 0, 0);
 
     id_col_     = std::make_shared<TableColumn<std::string>>(status_table_, "ID", std::vector<std::string>(), COL_SINGLE_WIDTH, DATA_ROW_START);
-    state_col_ = std::make_shared<TableColumn<std::string>>(status_table_, "STATUS",std::vector<std::string>(), COL_SINGLE_WIDTH, DATA_ROW_START);
+    state_col_ = std::make_shared<TableColumn<std::string>>(status_table_, "STATE",std::vector<std::string>(), COL_DOUBLE_WIDTH, DATA_ROW_START);
     batt_col_   = std::make_shared<TableColumn<int>>(status_table_, "BATT", std::vector<int>(), COL_SINGLE_WIDTH, DATA_ROW_START);
-    lat_col_    = std::make_shared<TableColumn<float>>(status_table_, "LAT", std::vector<float>(), COL_DOUBLE_WIDTH, DATA_ROW_START);
-    lon_col_    = std::make_shared<TableColumn<float>>(status_table_, "LON", std::vector<float>(), COL_DOUBLE_WIDTH, DATA_ROW_START);
+    lat_col_    = std::make_shared<TableColumn<double>>(status_table_, "LAT", std::vector<double>(), COL_DOUBLE_WIDTH, DATA_ROW_START);
+    lon_col_    = std::make_shared<TableColumn<double>>(status_table_, "LON", std::vector<double>(), COL_DOUBLE_WIDTH, DATA_ROW_START);
     sats_col_   = std::make_shared<TableColumn<int>>(status_table_, "SATS", std::vector<int>(), COL_SINGLE_WIDTH, DATA_ROW_START);
 
     columns_ = {id_col_, state_col_, batt_col_, lat_col_, lon_col_, sats_col_};
@@ -105,7 +103,7 @@ void SwarmControl::StatusTable() {
 void SwarmControl::Update() {
     GetRobotSubs();
     StatusTable();
-    refresh();
+    //refresh();
 }
 
 int main(int argc, char *argv[]) {

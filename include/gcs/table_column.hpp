@@ -56,22 +56,37 @@ class TableColumn : public TableColumnBase {
         }
 
         void DrawColumn(int col_start) override{
-            mvwprintw(table_, row_start_, col_start, header_.c_str());
-            size_t row = row_start_ + 1;
+            mvwprintw(table_, 1, col_start, header_.c_str());
+            size_t row = row_start_;
             for (const auto& item : data_){
                 if (row > getmaxy(table_)) {
                     break;
                 }
-                std::string str_item = ConvertToString(item);
-                mvwprintw(table_, row, col_start, "%.*s", str_item.c_str());
+                std::string str_item = ConvertToString(item).substr(0, width_ - 1);
+                mvwprintw(table_, row, col_start, "%s", str_item.c_str());
+                //mvwprintw(table_, row, col_start, str_item.c_str());
                 row++;
             }
         }
 
     private:
+        struct TypeChecker {
+            using clean_type = std::remove_cv_t<std::remove_reference_t<T>>;
+            static constexpr bool is_double = std::is_same_v<clean_type, double>;
+        };
+
         std::string ConvertToString(const T& item) {
-            std::ostringstream oss;
-            oss << item;
-            return oss.str();
+            using Checker = TypeChecker;
+
+            if (Checker::is_double){
+                std::ostringstream oss;
+                oss << std::setprecision(std::numeric_limits<double>::max_digits10) << std::fixed << item;
+                return oss.str();
+            }
+            else{
+                std::ostringstream oss;
+                oss << item;
+                return oss.str();
+            }
         }
 };

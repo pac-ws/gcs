@@ -61,8 +61,8 @@ class SwarmControl : public rclcpp::Node{
         std::shared_ptr<TableColumn<std::string>> id_col_;
         std::shared_ptr<TableColumn<std::string>> state_col_;
         std::shared_ptr<TableColumn<int>> batt_col_;
-        std::shared_ptr<TableColumn<float>> lat_col_;
-        std::shared_ptr<TableColumn<float>> lon_col_;
+        std::shared_ptr<TableColumn<double>> lat_col_;
+        std::shared_ptr<TableColumn<double>> lon_col_;
         std::shared_ptr<TableColumn<int>> sats_col_;
         std::vector<std::shared_ptr<TableColumnBase>> columns_;
 
