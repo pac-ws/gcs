@@ -30,7 +30,6 @@ set(target_dependencies
   async_pac_gnn_interfaces
   Curses)
 
-
 # Executables
 add_executable(status_pac src/status_pac.cpp)
 target_include_directories(status_pac PUBLIC
